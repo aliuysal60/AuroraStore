@@ -85,8 +85,8 @@ configure<ApplicationExtension> {
         // OverDrive revision on top of upstream 4.8.4 (versionCode 76): versionCode is
         // upstream * 100 + revision. OverDrive reads it from the release APK's file name
         // (OverDrivePlayStore-<versionCode>.apk) to decide whether to update the store.
-        versionCode = 76 * 100 + 2
-        versionName = "4.8.4-od.2"
+        versionCode = 76 * 100 + 3
+        versionName = "4.8.4-od.3"
 
         testInstrumentationRunner = "com.aurora.store.HiltInstrumentationTestRunner"
         testInstrumentationRunnerArguments["disableAnalytics"] = "true"

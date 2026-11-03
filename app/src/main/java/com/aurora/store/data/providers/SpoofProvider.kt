@@ -43,6 +43,25 @@ class SpoofProvider @Inject constructor(
         private const val DEVICE_SPOOF_ENABLED = "DEVICE_SPOOF_ENABLED"
         private const val DEVICE_SPOOF_PROPERTIES = "DEVICE_SPOOF_PROPERTIES"
 
+        private const val FEATURES = "Features"
+        private const val AUTOMOTIVE_FEATURE = "android.hardware.type.automotive"
+
+        /**
+         * OverDrive: BYD head units report `android.hardware.type.automotive`, and Play then offers
+         * only apps released to its Android Automotive track - everything else (news, shopping,
+         * banking...) shows up as incompatible before it is even downloaded. Present the unit as a
+         * regular Android device; every other value (screen, ABIs, SDK, libraries) stays real, so
+         * Play still picks the right split APKs.
+         */
+        internal fun stripAutomotiveFeature(properties: Properties): Properties {
+            val features = properties.getProperty(FEATURES) ?: return properties
+            properties.setProperty(
+                FEATURES,
+                features.split(",").filterNot { it.trim() == AUTOMOTIVE_FEATURE }.joinToString(",")
+            )
+            return properties
+        }
+
         /**
          * Gated decision 4: the live path always sends these, regardless of what GSF/Vending
          * build is actually installed. [NativeDeviceProperties] reads the real installed
@@ -109,6 +128,7 @@ class SpoofProvider @Inject constructor(
         properties.setProperty("GSF.version", PINNED_GSF_VERSION)
         properties.setProperty("Vending.version", PINNED_VENDING_VERSION)
         properties.setProperty("Vending.versionString", PINNED_VENDING_VERSION_STRING)
+        stripAutomotiveFeature(properties)
         if (isHuawei) stripHuaweiProperties(properties) else properties
     }
 
