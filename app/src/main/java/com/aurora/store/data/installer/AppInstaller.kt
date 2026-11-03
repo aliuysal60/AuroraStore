@@ -48,7 +48,8 @@ class AppInstaller @Inject constructor(
     private val serviceInstaller: ServiceInstaller,
     private val amInstaller: AMInstaller,
     private val shizukuInstaller: ShizukuInstaller,
-    private val microGInstaller: MicroGInstaller
+    private val microGInstaller: MicroGInstaller,
+    private val overDriveInstaller: OverDriveInstaller
 ) {
 
     companion object {
@@ -62,8 +63,13 @@ class AppInstaller @Inject constructor(
         const val EXTRA_DISPLAY_NAME =
             "com.aurora.store.data.installer.AppInstaller.EXTRA_DISPLAY_NAME"
 
-        fun getCurrentInstaller(context: Context): Installer =
-            Installer.entries[Preferences.getInteger(context, PREFERENCE_INSTALLER_ID)]
+        /**
+         * OverDrive Play Store always installs through OverDrive: the head unit blocks
+         * Android's own installer, and the other installers are hidden. A stored choice from
+         * an older build is ignored.
+         */
+        @Suppress("UNUSED_PARAMETER")
+        fun getCurrentInstaller(context: Context): Installer = Installer.OVERDRIVE
 
         fun getInstallerInfo(installer: Installer): InstallerInfo = when (installer) {
             Installer.SESSION -> SessionInstaller.installerInfo
@@ -73,6 +79,7 @@ class AppInstaller @Inject constructor(
             Installer.AM -> AMInstaller.installerInfo
             Installer.SHIZUKU -> ShizukuInstaller.installerInfo
             Installer.MICROG -> MicroGInstaller.installerInfo
+            Installer.OVERDRIVE -> OverDriveInstaller.installerInfo
         }
 
         /**
@@ -83,6 +90,7 @@ class AppInstaller @Inject constructor(
             context: Context,
             rootAccess: Boolean = hasRootAccess()
         ): List<InstallerInfo> = listOfNotNull(
+            if (OverDriveInstaller.hasOverDrive(context)) OverDriveInstaller.installerInfo else null,
             SessionInstaller.installerInfo,
             NativeInstaller.installerInfo,
             if (rootAccess) RootInstaller.installerInfo else null,
@@ -153,6 +161,8 @@ class AppInstaller @Inject constructor(
                     isOAndAbove && hasShizukuOrSui(context) && hasShizukuPerm(context)
 
                 Installer.MICROG -> false
+
+                Installer.OVERDRIVE -> OverDriveInstaller.hasOverDrive(context)
             }
         }
 
@@ -262,6 +272,11 @@ class AppInstaller @Inject constructor(
         }
 
         fun uninstall(context: Context, packageName: String) {
+            if (getCurrentInstaller(context) == Installer.OVERDRIVE) {
+                // Through OverDrive's ADB shell (pm uninstall): no system dialog.
+                OverDriveInstaller.uninstall(context, packageName)
+                return
+            }
             val intent = Intent().apply {
                 data = Uri.fromParts("package", packageName, null)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -316,6 +331,8 @@ class AppInstaller @Inject constructor(
             } else {
                 defaultInstaller
             }
+
+            Installer.OVERDRIVE -> overDriveInstaller
         }
 
         if (selected != Installer.SESSION && installer === defaultInstaller) {

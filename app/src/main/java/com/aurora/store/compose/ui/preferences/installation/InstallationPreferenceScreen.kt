@@ -113,8 +113,8 @@ private fun ScreenContent(
                 .fillMaxSize()
         ) {
             item {
+                // OverDrive Play Store: the installer is always OverDrive; no chooser.
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.Installer) },
                     headlineContent = { Text(stringResource(R.string.pref_install_mode_title)) },
                     supportingContent = { Text(stringResource(installerTitle)) }
                 )

@@ -66,9 +66,10 @@ class PermissionProvider(private val fragment: Fragment) :
                     context.isExternalStorageAccessible()
                 }
 
-                PermissionType.INSTALL_UNKNOWN_APPS -> {
-                    PackageUtil.canRequestPackageInstalls(context)
-                }
+                // OverDrive Play Store never uses Android's installer: OverDrive installs
+                // through its ADB shell, so "install unknown apps" is not needed (and the head
+                // unit does not let the user grant it).
+                PermissionType.INSTALL_UNKNOWN_APPS -> true
 
                 PermissionType.POST_NOTIFICATIONS -> {
                     if (isTAndAbove) {
@@ -88,18 +89,8 @@ class PermissionProvider(private val fragment: Fragment) :
          * Returns all known permissions that can be requested by Aurora Store
          */
         fun getAllKnownPermissions(context: Context): List<Permission> {
+            // OverDrive Play Store: no "install unknown apps" entry (see isGranted).
             val permissions = mutableListOf(
-                Permission(
-                    type = PermissionType.INSTALL_UNKNOWN_APPS,
-                    title = context.getString(R.string.onboarding_permission_installer),
-                    subtitle = if (isOAndAbove) {
-                        context.getString(R.string.onboarding_permission_installer_desc)
-                    } else {
-                        context.getString(R.string.onboarding_permission_installer_legacy_desc)
-                    },
-                    optional = false,
-                    isGranted = isGranted(context, PermissionType.INSTALL_UNKNOWN_APPS)
-                ),
                 Permission(
                     type = PermissionType.DOZE_WHITELIST,
                     title = context.getString(R.string.onboarding_permission_doze),

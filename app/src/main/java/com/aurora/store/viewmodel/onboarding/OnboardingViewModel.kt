@@ -16,11 +16,11 @@ import com.aurora.Constants.PACKAGE_NAME_GMS
 import com.aurora.Constants.PACKAGE_NAME_PLAY_STORE
 import com.aurora.extensions.TAG
 import com.aurora.extensions.areNotificationsEnabled
-import com.aurora.extensions.isIgnoringBatteryOptimizations
 import com.aurora.store.AuroraApp
 import com.aurora.store.BuildConfig
 import com.aurora.store.data.event.InstallerEvent
 import com.aurora.store.data.helper.UpdateHelper
+import com.aurora.store.data.model.Installer
 import com.aurora.store.data.model.UpdateMode
 import com.aurora.store.data.providers.BlacklistProvider
 import com.aurora.store.data.work.CacheWorker
@@ -102,8 +102,9 @@ class OnboardingViewModel @Inject constructor(
     }
 
     private fun setupAutoUpdates() {
+        // OverDrive Play Store: updates are announced, the user installs them (no silent
+        // auto-install by default); the user can still turn auto-install on in settings.
         val updateMode = when {
-            context.isIgnoringBatteryOptimizations() -> UpdateMode.CHECK_AND_INSTALL
             context.areNotificationsEnabled() -> UpdateMode.CHECK_AND_NOTIFY
             else -> UpdateMode.DISABLED
         }
@@ -129,7 +130,7 @@ class OnboardingViewModel @Inject constructor(
 
         /*Installer*/
         save(PREFERENCE_AUTO_DELETE, true)
-        save(PREFERENCE_INSTALLER_ID, 0)
+        save(PREFERENCE_INSTALLER_ID, Installer.OVERDRIVE.ordinal)
 
         /*Updates*/
         save(PREFERENCE_UPDATES_EXTENDED, false)

@@ -18,6 +18,21 @@ plugins {
     alias(libs.plugins.hilt.android.plugin)
 }
 
+// OverDrive Play Store is signed with OverDrive's release key: OverDrive's install service only
+// accepts callers signed with that key. The settings (KEYSTORE_FILE, KEYSTORE_PASSWORD,
+// KEY_ALIAS, KEY_PASSWORD) stay outside the repository, in the same key=value file OverDrive's
+// release.ps1 reads; read as raw lines because Windows paths carry backslashes. Without the
+// file the release build falls back to Aurora's own signing.properties, or stays unsigned.
+val overdriveSigning: Map<String, String>? = providers.gradleProperty("overdriveSigningProperties")
+    .orElse(System.getProperty("user.home") + "/keystores/overdrive-release.properties")
+    .map { File(it) }
+    .get()
+    .takeIf { it.isFile }
+    ?.readLines()
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() && !it.startsWith("#") && '=' in it }
+    ?.associate { it.substringBefore('=').trim() to it.substringAfter('=').trim() }
+
 val lastCommitHash = providers.exec {
     commandLine("git", "rev-parse", "--short", "HEAD")
 }.standardOutput.asText.map { it.trim() }
@@ -57,7 +72,9 @@ configure<ApplicationExtension> {
     }
 
     defaultConfig {
-        applicationId = "com.aurora.store"
+        // OverDrive Play Store: its own package, so it never clashes with an official Aurora
+        // Store (different signature) installed on the same car.
+        applicationId = "com.overdrive.aurora"
         minSdk {
             version = release(23)
         }
@@ -65,8 +82,11 @@ configure<ApplicationExtension> {
             version = release(37)
         }
 
-        versionCode = 76
-        versionName = "4.8.4"
+        // OverDrive revision on top of upstream 4.8.4 (versionCode 76): versionCode is
+        // upstream * 100 + revision. OverDrive reads it from the release APK's file name
+        // (OverDrivePlayStore-<versionCode>.apk) to decide whether to update the store.
+        versionCode = 76 * 100 + 1
+        versionName = "4.8.4-od.1"
 
         testInstrumentationRunner = "com.aurora.store.HiltInstrumentationTestRunner"
         testInstrumentationRunnerArguments["disableAnalytics"] = "true"
@@ -78,6 +98,14 @@ configure<ApplicationExtension> {
     }
 
     signingConfigs {
+        if (overdriveSigning != null) {
+            create("overdrive") {
+                storeFile = file(overdriveSigning.getValue("KEYSTORE_FILE"))
+                storePassword = overdriveSigning.getValue("KEYSTORE_PASSWORD")
+                keyAlias = overdriveSigning.getValue("KEY_ALIAS")
+                keyPassword = overdriveSigning.getValue("KEY_PASSWORD")
+            }
+        }
         if (File("signing.properties").exists()) {
             create("release") {
                 val properties = Properties().apply {
@@ -108,7 +136,9 @@ configure<ApplicationExtension> {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (File("signing.properties").exists()) {
+            if (overdriveSigning != null) {
+                signingConfig = signingConfigs.getByName("overdrive")
+            } else if (File("signing.properties").exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }

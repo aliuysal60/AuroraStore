@@ -15,5 +15,8 @@ enum class Installer {
     SERVICE,
     AM,
     SHIZUKU,
-    MICROG
+    MICROG,
+
+    /** OverDrive Play Store: silent install through OverDrive's ADB shell (always used). */
+    OVERDRIVE
 }

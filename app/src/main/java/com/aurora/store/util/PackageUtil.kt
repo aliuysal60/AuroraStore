@@ -192,6 +192,9 @@ object PackageUtil {
      * flavor check. The user-facing toggle gates this further at runtime.
      */
     fun isSelfUpdateSupported(context: Context): Boolean {
+        // OverDrive Play Store is updated by OverDrive from its own GitHub releases; Aurora's
+        // self-update would fetch the official com.aurora.store build instead.
+        if (BuildConfig.APPLICATION_ID.startsWith("com.overdrive.")) return false
         val flavorEligible = BuildConfig.FLAVOR == FLAVOUR_VANILLA ||
             BuildConfig.FLAVOR == FLAVOUR_PRELOAD
         return flavorEligible &&

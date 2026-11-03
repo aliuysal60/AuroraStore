@@ -6,7 +6,7 @@
   ~ SPDX-License-Identifier: GPL-3.0-or-later
   -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name" translatable="false">"Aurora Store"</string>
+    <string name="app_name" translatable="false">"OverDrive Play Mağaza"</string>
     <string name="download_speed_bytes" translatable="false">%1$d B/s</string>
     <string name="download_speed_kb" translatable="false">%1$s KB/s</string>
     <string name="download_speed_mb" translatable="false">%1$s MB/s</string>
@@ -514,6 +514,9 @@
     <string name="session_installer_desc">Recommended, in-built and supports all Android versions</string>
     <string name="root_installer_subtitle">Shell based installer using root permissions</string>
     <string name="root_installer_desc">Requires root/superuser privileges, supports all Android versions.</string>
+    <string name="pref_install_mode_overdrive" translatable="false">OverDrive</string>
+    <string name="overdrive_installer_subtitle">Silent install through OverDrive\'s ADB shell</string>
+    <string name="overdrive_installer_desc">OverDrive installs, updates and uninstalls apps without a prompt, the way it updates itself. Requires OverDrive 57.0.8 or newer.</string>
     <string name="native_installer_subtitle">Intent based installer, available on all devices</string>
     <string name="native_installer_desc">Best suited for devices running below Android 4.4</string>
     <string name="services_installer_subtitle">Installer for background installations</string>
