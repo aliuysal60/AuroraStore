@@ -17,7 +17,6 @@ import com.aurora.gplayapi.session.AuthenticatedSession
 import com.aurora.gplayapi.session.SessionFactory
 import com.aurora.gplayapi.session.TokenType
 import com.aurora.store.AuroraApp
-import com.aurora.store.BuildConfig.APPLICATION_ID
 import com.aurora.store.BuildConfig.VERSION_CODE
 import com.aurora.store.BuildConfig.VERSION_NAME
 import com.aurora.store.R
@@ -279,7 +278,7 @@ class AuthProvider @Inject constructor(
     @Throws(IOException::class)
     private fun postToDispenser(url: String, body: ByteArray): Response {
         val headers = mapOf(
-            "User-Agent" to "${APPLICATION_ID}-${VERSION_NAME}-${VERSION_CODE}"
+            "User-Agent" to dispenserUserAgent(VERSION_NAME, VERSION_CODE)
         ).toHeaders()
         val request = Request(
             url = url.toHttpUrl(),
@@ -518,5 +517,23 @@ class AuthProvider @Inject constructor(
 
     companion object {
         const val SESSION_REJECTION_WINDOW_MS = 60_000L
+
+        /** Package name of the upstream Aurora Store, the client the dispenser accepts. */
+        private const val UPSTREAM_PACKAGE = "com.aurora.store"
+
+        /**
+         * User-Agent for the anonymous-session dispenser.
+         *
+         * OverDrive: the dispenser answers 403 ("Access denied! Are you using VPN or Tor?") to
+         * any client id but upstream Aurora's, and this fork is `com.overdrive.aurora`. The
+         * user chose to identify as the upstream release this fork is built on: versionName
+         * "4.8.4-od.1" -> "4.8.4", versionCode 76 * 100 + N -> 76, so it follows upstream
+         * merges without edits.
+         */
+        internal fun dispenserUserAgent(versionName: String, versionCode: Int): String {
+            val upstreamName = versionName.substringBefore("-od")
+            val upstreamCode = versionCode / 100
+            return "$UPSTREAM_PACKAGE-$upstreamName-$upstreamCode"
+        }
     }
 }
