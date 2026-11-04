@@ -45,6 +45,7 @@ class SpoofProvider @Inject constructor(
 
         private const val FEATURES = "Features"
         private const val AUTOMOTIVE_FEATURE = "android.hardware.type.automotive"
+        private const val PORTRAIT_FEATURE = "android.hardware.screen.portrait"
 
         /**
          * OverDrive: BYD head units report `android.hardware.type.automotive`, and Play then offers
@@ -52,13 +53,21 @@ class SpoofProvider @Inject constructor(
          * banking...) shows up as incompatible before it is even downloaded. Present the unit as a
          * regular Android device; every other value (screen, ABIs, SDK, libraries) stays real, so
          * Play still picks the right split APKs.
+         *
+         * The units also report only `android.hardware.screen.landscape`, although BYD's display
+         * rotates to portrait. Play treats every portrait-locked app (most phone apps: shopping,
+         * messaging, navigation) as needing a portrait screen, so on a landscape-only profile they
+         * stayed incompatible even without the automotive feature. Checked against Play with the
+         * unit's real profile: 10 of 17 popular apps compatible without the portrait feature, all
+         * 17 with it. Only added when the device was a head unit, so phones and tablets are untouched.
          */
-        internal fun stripAutomotiveFeature(properties: Properties): Properties {
-            val features = properties.getProperty(FEATURES) ?: return properties
-            properties.setProperty(
-                FEATURES,
-                features.split(",").filterNot { it.trim() == AUTOMOTIVE_FEATURE }.joinToString(",")
-            )
+        internal fun adaptHeadUnitFeatures(properties: Properties): Properties {
+            val features = properties.getProperty(FEATURES)?.split(",")?.map { it.trim() }
+                ?: return properties
+            if (AUTOMOTIVE_FEATURE !in features) return properties
+            val adapted = features.filterNot { it == AUTOMOTIVE_FEATURE } +
+                listOf(PORTRAIT_FEATURE).filterNot { it in features }
+            properties.setProperty(FEATURES, adapted.joinToString(","))
             return properties
         }
 
@@ -128,7 +137,7 @@ class SpoofProvider @Inject constructor(
         properties.setProperty("GSF.version", PINNED_GSF_VERSION)
         properties.setProperty("Vending.version", PINNED_VENDING_VERSION)
         properties.setProperty("Vending.versionString", PINNED_VENDING_VERSION_STRING)
-        stripAutomotiveFeature(properties)
+        adaptHeadUnitFeatures(properties)
         if (isHuawei) stripHuaweiProperties(properties) else properties
     }
 

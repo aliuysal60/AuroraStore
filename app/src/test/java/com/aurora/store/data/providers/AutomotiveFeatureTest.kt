@@ -1,4 +1,4 @@
-// AutomotiveFeatureTest.kt — the head unit must not announce itself to Play as an automotive device
+// AutomotiveFeatureTest.kt — the head unit must look to Play like a regular device with a rotating screen
 package com.aurora.store.data.providers
 
 import java.util.Properties
@@ -9,27 +9,49 @@ import org.junit.Test
 class AutomotiveFeatureTest {
 
     @Test
-    fun onlyTheAutomotiveFeatureIsRemoved() {
+    fun headUnitLosesAutomotiveAndGainsPortrait() {
         val properties = Properties().apply {
             setProperty(
                 "Features",
-                "android.hardware.wifi,android.hardware.type.automotive,android.software.webview"
+                "android.hardware.wifi,android.hardware.type.automotive," +
+                    "android.hardware.screen.landscape,android.software.webview"
             )
             setProperty("Platforms", "arm64-v8a,armeabi-v7a")
         }
-        SpoofProvider.stripAutomotiveFeature(properties)
-        assertEquals("android.hardware.wifi,android.software.webview", properties.getProperty("Features"))
+        SpoofProvider.adaptHeadUnitFeatures(properties)
+        assertEquals(
+            "android.hardware.wifi,android.hardware.screen.landscape,android.software.webview," +
+                "android.hardware.screen.portrait",
+            properties.getProperty("Features")
+        )
         assertEquals("arm64-v8a,armeabi-v7a", properties.getProperty("Platforms"))
     }
 
     @Test
-    fun profilesWithoutTheFeatureAreLeftAlone() {
-        val properties = Properties().apply { setProperty("Features", "android.hardware.wifi") }
-        SpoofProvider.stripAutomotiveFeature(properties)
-        assertEquals("android.hardware.wifi", properties.getProperty("Features"))
+    fun portraitIsNotDuplicated() {
+        val properties = Properties().apply {
+            setProperty(
+                "Features",
+                "android.hardware.type.automotive,android.hardware.screen.portrait"
+            )
+        }
+        SpoofProvider.adaptHeadUnitFeatures(properties)
+        assertEquals("android.hardware.screen.portrait", properties.getProperty("Features"))
+    }
+
+    @Test
+    fun nonHeadUnitProfilesAreLeftAlone() {
+        val properties = Properties().apply {
+            setProperty("Features", "android.hardware.wifi,android.hardware.screen.landscape")
+        }
+        SpoofProvider.adaptHeadUnitFeatures(properties)
+        assertEquals(
+            "android.hardware.wifi,android.hardware.screen.landscape",
+            properties.getProperty("Features")
+        )
 
         val empty = Properties()
-        SpoofProvider.stripAutomotiveFeature(empty)
+        SpoofProvider.adaptHeadUnitFeatures(empty)
         assertNull(empty.getProperty("Features"))
     }
 }
